@@ -15,78 +15,75 @@ class _HomeScreenState extends State<HomeScreen> {
   File _image;
   String result = '';
   ImagePicker imagePicker;
-  List _output;
 
 
 
 
-
-
-
-  selectPhoto() async{
-    PickedFile pickedFile = await imagePicker.getImage(source: ImageSource.gallery);
-    if(pickedFile == null) return null;
-    setState(() {
-      _image = File(pickedFile.path);
-
-    });
-    doImageClassification();
-  }
-
-
-  capturePhoto() async{
-    PickedFile pickedFile = await imagePicker.getImage(source: ImageSource.camera);
-    if(pickedFile == null) return null;
-
-    setState(() {
-      _image = File(pickedFile.path);
-
-    });
-    doImageClassification();
-  }
-
-  loadModel() async{
-    String output = await Tflite.loadModel(
-        model: "assets/model.tflite",
-        labels: "assets/labels.txt",
-        numThreads: 1,
-      isAsset: true,
-      useGpuDelegate: false
-    );
-    print(output);
-
-  }
-
-  doImageClassification() async {
-    var recognition = await Tflite.runModelOnImage(path: _image.path,
-    imageMean: 0.0,
-    imageStd: 255.0,
-    threshold: 2,
-    asynch: true);
-    print(recognition.length.toString());
-    setState(() {
-      result = "";
-    });
-
-    recognition.forEach((element) {
-      setState(() {
-        print(element.toString());
-        result += element["label"];
-      });
-    });
-  }
 
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
     imagePicker = ImagePicker();
-    loadModel().then((value){
-      setState(() {
+    loadDataModelFiles();
+  }
 
+  loadDataModelFiles() async{
+    String output = await Tflite.loadModel(
+        model: "assets/model.tflite",
+        labels: "assets/labels.txt",
+        numThreads: 1,
+        isAsset: true,
+        useGpuDelegate: false
+    );
+  }
+
+  doImageClassification() async{
+    var recognition = await Tflite.runModelOnImage(
+        path: _image.path,
+        imageMean: 0.0,
+        imageStd: 255.0,
+        numResults: 2,
+        threshold: 0.1,
+        asynch: true
+    );
+    print(recognition.length.toString());
+    setState(() {
+      result = "";
+    });
+    recognition.forEach((element) {
+      setState(() {
+        print(element.toString());
+        result += element["label"];
       });
     });
+
   }
+
+
+  selectPhoto() async{
+    PickedFile pickedFile =
+    await imagePicker.getImage(source: ImageSource.gallery);
+    _image = File(pickedFile.path);
+    setState(() {
+      _image;
+      doImageClassification();
+    });
+  }
+
+
+  capturePhoto() async{
+    PickedFile pickedFile =
+    await imagePicker.getImage(source: ImageSource.camera);
+    _image = File(pickedFile.path);
+    setState(() {
+      _image;
+      doImageClassification();
+    });
+  }
+
+
+
 
   @override
   void dispose() {
@@ -146,14 +143,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 SizedBox(height:160 ,),
                 Container(
                   margin: EdgeInsets.only(top: 20),
-                  child: _output != null ? Text("$result",
+                  child: Text("$result",
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontFamily: "Brand Bold",
                     fontSize: 25,
                     color: Colors.blueAccent,
                     backgroundColor: Colors.white60
-                  ),) : Container(),
+                  ),),
                 ),
               ],
             ),
